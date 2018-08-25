@@ -26,11 +26,11 @@ view model =
             , style "outline" "0"
             ]
             []
-        , div [] <| parseDatShiz model
+        , div [] <| markdownToHtml model
         ]
 
 
-parseDatShiz model =
+markdownToHtml model =
     let
         result =
             run parseMarkDowns model
@@ -113,19 +113,6 @@ elListHelp els =
 parseMarkDowns : Parser (List Element)
 parseMarkDowns =
     loop [] elListHelp
-
-
-
--- succeed Elements
---     |. symbol "("
---     |. spaces
---     |= float
---     |. spaces
---     |. symbol ","
---     |. spaces
---     |= float
---     |. spaces
---     |. symbol ")"
 
 
 update msg model =
