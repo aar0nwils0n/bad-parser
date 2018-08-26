@@ -99,11 +99,20 @@ parseSingleEl =
         |= chompLine
 
 
+parseText =
+    succeed Element
+        |= succeed Text
+        |= chompLine
+
+
 elListHelp : List Element -> Parser (Step (List Element) (List Element))
 elListHelp els =
     oneOf
         [ succeed (\el -> Loop (el :: els))
             |= parseSingleEl
+            |. symbol "\n"
+        , succeed (\el -> Loop (el :: els))
+            |= parseText
             |. symbol "\n"
         , succeed ()
             |> map (\_ -> Done (List.reverse els))
