@@ -1,7 +1,7 @@
 module App exposing (..)
 
 import Browser
-import Html exposing (div, textarea, text, h1, h2, h3)
+import Html exposing (div, textarea, text, h1, h2, h3, div)
 import Html.Events exposing (..)
 import Html.Attributes exposing (value, style)
 import Parser exposing (..)
@@ -30,6 +30,57 @@ view model =
         ]
 
 
+deadEndToString : Problem -> String
+deadEndToString problem =
+    case problem of
+        ExpectingInt ->
+            "ExpectingInt"
+
+        ExpectingHex ->
+            "ExpectingHex"
+
+        ExpectingOctal ->
+            "ExpectingOctal"
+
+        ExpectingBinary ->
+            "ExpectingBinary"
+
+        ExpectingFloat ->
+            "ExpectingFloat"
+
+        ExpectingNumber ->
+            "ExpectingNumber"
+
+        ExpectingVariable ->
+            "ExpectingVariable"
+
+        ExpectingSymbol str ->
+            "ExpectingSymbol " ++ str
+
+        ExpectingKeyword str ->
+            "ExpectingKeyword " ++ str
+
+        ExpectingEnd ->
+            "ExpectingEnd"
+
+        UnexpectedChar ->
+            "UnexpectedChar"
+
+        Problem str ->
+            "Problem " ++ str
+
+        BadRepeat ->
+            "BadRepeat"
+
+        Expecting str ->
+            "Expecting " ++ str
+
+
+deadEndConversion : DeadEnd -> Html.Html msg
+deadEndConversion deadEnd =
+    div [] [ text <| deadEndToString deadEnd.problem ]
+
+
 markdownToHtml model =
     let
         result =
@@ -37,7 +88,7 @@ markdownToHtml model =
     in
         case result of
             Err e ->
-                [ text <| model ]
+                List.map deadEndConversion e
 
             Ok elements ->
                 List.map
@@ -53,7 +104,7 @@ markdownToHtml model =
                                 h3 [] [ text element.text ]
 
                             Text ->
-                                text element.text
+                                div [] [ text element.text ]
                     )
                     elements
 
@@ -89,7 +140,7 @@ selector =
 chompLine =
     getChompedString <|
         succeed ()
-            |. chompWhile (\c -> c /= '\n')
+            |. chompUntilEndOr "\n"
 
 
 parseSingleEl =
@@ -107,16 +158,25 @@ parseText =
 
 elListHelp : List Element -> Parser (Step (List Element) (List Element))
 elListHelp els =
-    oneOf
-        [ succeed (\el -> Loop (el :: els))
-            |= parseSingleEl
-            |. symbol "\n"
-        , succeed (\el -> Loop (el :: els))
-            |= parseText
-            |. symbol "\n"
-        , succeed ()
-            |> map (\_ -> Done (List.reverse els))
-        ]
+    let
+        doneWhen =
+            map (\_ -> Done (List.reverse els))
+
+        onNext =
+            (\el -> Loop (el :: els))
+    in
+        oneOf
+            [ doneWhen end
+            , succeed (\_ -> Loop els)
+                |= token "\n"
+            , succeed onNext
+                |= parseSingleEl
+            , succeed onNext
+                |= parseText
+            , succeed (\el -> (::) el els |> List.reverse |> Done)
+                |= parseText
+                |. end
+            ]
 
 
 parseMarkDowns : Parser (List Element)
