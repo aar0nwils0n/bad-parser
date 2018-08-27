@@ -129,11 +129,11 @@ type alias Element =
 selector =
     oneOf
         [ succeed H3
-            |. keyword "***"
+            |. keyword "###"
         , succeed H2
-            |. keyword "**"
+            |. keyword "##"
         , succeed H1
-            |. symbol "*"
+            |. symbol "#"
         ]
 
 
@@ -173,9 +173,6 @@ elListHelp els =
                 |= parseSingleEl
             , succeed onNext
                 |= parseText
-            , succeed (\el -> (::) el els |> List.reverse |> Done)
-                |= parseText
-                |. end
             ]
 
 
